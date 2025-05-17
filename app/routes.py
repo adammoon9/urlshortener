@@ -16,7 +16,7 @@ def create_short_code(length=6):
 @main.route('/shorten',  methods=['POST'])
 def create_url():
     data = request.json
-    if not 'url' in data.keys() or not data:
+    if not 'url' in data:
         return jsonify({'msg': 'Invalid URL or URL Not found in request data.'}), 400
     new_url = db.create_url(data['url'], create_short_code())
     return jsonify(new_url.serialize()), 201
@@ -37,6 +37,10 @@ def get_url_statistics(url:str):
 
 @main.route('/shorten/<url>', methods=['PUT'])
 def update_url(url:str):
+    data = request.json
+    if not 'url' in data:
+        return jsonify({'msg': 'Invalid URL or URL Not found in request data.'}), 400
+    
     new_url = request.json['url']
     result = db.update_url(new_url, url)
     if result:
