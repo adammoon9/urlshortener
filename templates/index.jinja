@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block head %}
+{% endblock head %}
+{% block body %}
+<div class="centered-wrapper">
+    <div class="shortener-container">
+        <form id="shorten-form">
+            <div class="mb-3">
+                <label for="long-url" class="form-label">Enter your long URL:</label>
+                <input type="text" class="form-control" id="long-url" autocomplete="off" placeholder="https://example.com/some/long/url">
+            </div>
+            <button class="btn btn-primary w-100" id="shortenUrl">Shorten</button>
+        </form>
+        <div id="result" class="alert alert-info mt-3 d-none"></div>
+        <hr>
+        <footer>
+            <small>
+                &copy; 2025
+                <a href="https://github.com/adammoon9" target="_blank" rel="noopener noreferrer">
+                    Adam Mooney
+                </a>
+            </small>
+        </footer>
+    </div>
+</div>
+{% endblock body %}
+

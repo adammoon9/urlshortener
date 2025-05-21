@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block body %}
+    {# {{ "ID" | "URL" | "Short Code" | "Time Created" | "Last Updated" }} #}
+    <table class="table table-striped">
+        <thead class="thead-dark">
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">URL</th>
+                <th scope="col">Short Code</th>
+                <th scope="col">Time Created</th>
+                <th scope="col">Last Updated</th>
+                <th scope="col"></th>
+            </tr>
+        </thead>
+        <tbody>
+        {%- for i in range(my_urls | length) -%}
+            <tr data-shortCode="{{ my_urls[i].shortCode }}">
+                <th scope="row"> {{ i }} </th>
+                <td class="shortCode-{{ my_urls[i].shortCode }} longUrl"> <a href="{{ my_urls[i].url }}">{{ my_urls[i].url }}</a> </td>
+                <td> {{ my_urls[i].shortCode }} </td>
+                <td> {{ my_urls[i].createdAt }} </td>
+                <td class="shortCode-{{ my_urls[i].shortCode }} updatedAt"> {{ my_urls[i].updatedAt }} </td>
+                <td>
+                    <a class="del-url" data-shortCode="{{ my_urls[i].shortCode }}" data-id=" {{ my_urls[i].id }}" href="#" data-bs-toggle="modal" data-bs-target="#deleteModal"><i class="fa-solid fa-trash"></i></a>
+                </td>
+                <td>
+                    <a class="edit-url" data-shortCode="{{ my_urls[i].shortCode }}" data-id=" {{ my_urls[i].id }}" data-longUrl="{{ my_urls[i].url }}" href="#" data-bs-toggle="modal" data-bs-target="#editModal"><i class="fa-solid fa-pen-to-square"></i></a>
+                </td>
+            </tr>
+        {%- endfor -%}
+        </tbody>
+    </table>
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel">Delete URL?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete this URL? This action cannot be undone.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editModalLabel">Edit URL</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="form-group">
+                            <label for="current-target" class="col-form-label">Current URL Target:</label>
+                            <input type="text" class="form-control" id="current-target" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-target" class="col-form-label">New URL Target:</label>
+                            <input type="text" class="form-control" id="new-target">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}

@@ -1,8 +1,9 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, make_response, render_template, redirect
 from .db_helper import DBHelper as db
 from .models.url import URL
-from .extensions import db as sa
+from .extensions import db as sa #import sqlalchemy serparately for small queries
 import string, random
+import json
 
 main = Blueprint('main', __name__)
 
@@ -12,6 +13,10 @@ def create_short_code(length=6):
     while sa.session.query(URL).filter_by(shortCode=short_code).first():
         short_code = ''.join(random.choices(alphabet, k=length))
     return short_code 
+
+@main.route('/', methods=['GET'])
+def root():
+    return make_response(render_template('index.jinja'), 200)
 
 @main.route('/shorten',  methods=['POST'])
 def create_url():
@@ -53,3 +58,8 @@ def delete_url(url:str):
     if result == 404:
         return jsonify({'msg': 'URL Not Found'}), result
     return '', result
+
+@main.route('/myurls', methods=['GET'])
+def get_my_urls():
+    urls = db.get_my_urls()
+    return render_template('my_urls.jinja', my_urls=urls)
