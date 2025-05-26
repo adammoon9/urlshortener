@@ -1,84 +1,126 @@
-import unittest
 import pytest
+import os
 from app import create_app
+from app.extensions import db
+from app.models.url import URL
+from app.db_helper import DBHelper as test_db_helper
 
-class testURLSAPI(unittest.TestCase):
+class TestConfig:
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///test.db'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    deleteShortCode = None
+@pytest.fixture
+def short_code():
+    url = URL(url='https://test.url/123', shortCode='abc123')
+    db.session.add(url)
+    db.session.commit()
 
-    def test_get_url_endpoint(self):
-        with create_app().test_client() as tc:
-            response = tc.get('/shorten/abc123')
-            response_json = response.get_json()
-            
-            valid_response = {'createdAt': 'Sat, 17 May 2025 00:00:00 GMT', 'id': 0, 'shortCode': 'abc123', 'updatedAt': 'Sat, 17 May 2025 15:45:19 GMT', 'url': 'test123'}
-            old_timestamp = valid_response.pop('updatedAt')
-            new_timestamp = response_json.pop('updatedAt')
-            
-            self.assertNotEqual(old_timestamp, new_timestamp) # Test that the updated at actually changes 
-            self.assertDictEqual(response_json, {'createdAt': 'Sat, 17 May 2025 00:00:00 GMT', 'id': 0, 'shortCode': 'abc123', 'url': 'test123'})
-            self.assertTrue(response.status_code == 200) # Check the resposne code now that the static result data has been checked
+    return url.shortCode
 
-    def test_get_url_endpoint_404(self):
-        with create_app().test_client() as tc:
-            response = tc.get('/shorten/0')
-            response_json = response.get_json()
+@pytest.fixture
+def my_urls():
+    url = URL(url='https://test.url/123', shortCode='abc123')
+    db.session.add(url)
+    db.session.commit()
 
-            assert response_json == {'msg': 'URL Not Found'}
-            self.assertTrue(response.status_code == 404)
+    return url
+    
 
+@pytest.fixture
+def app():
+    app = create_app(config_object=TestConfig)
+    with app.app_context():
+        db.create_all()
+        yield app
+        # teardown
+        db.session.remove()
+        db.drop_all()
+        os.remove('./instance/test.db')
 
-    def test_get_api_statistics_endpoint(self):
-        with create_app().test_client() as tc:
-            response = tc.get('/shorten/abc123/stats')
-            response_json = response.get_json()
+@pytest.fixture
+def client(app):
+    return app.test_client()
 
-            self.assertIn('accessCount', response_json)
-            self.assertTrue(type(response_json['accessCount']) == int)
+def test_get_url_endpoint(client, short_code):
 
-    def test_post_url_endpoint(self):
-        with create_app().test_client() as tc:
-            response = tc.post('/shorten', json={
-                'url': 'https://test.url/123'
-            })
-            response_json = response.get_json()
-            
-            self.assertIsNotNone(response_json)
-            self.assertTrue(response.status_code == 201)
-            testURLSAPI.deleteShortCode = response_json['shortCode']
+    response = client.get(f'/shorten/{short_code}')
+    
+    assert response.status_code == 200
+    assert response.get_json()['url'] == 'https://test.url/123'
 
-    def test_post_url_endpoint_no_url(self):
-        with create_app().test_client() as tc:
-            response = tc.post('/shorten', json={})
-            response_json = response.get_json()
+def test_get_url_endpoint_404(client):
+    response = client.get('/shorten/0')
+    
+    assert response.status_code == 404
+    assert response.get_json() == {'msg': 'URL Not Found'}
 
-            self.assertTrue(response_json == {'msg': 'Invalid URL or URL Not found in request data.'})
-            self.assertTrue(response.status_code == 400)
+def test_get_api_statistics_endpoint(client, short_code):
 
-    def test_update_url_endpoint(self):
-        with create_app().test_client() as tc:
-            response = tc.put('/shorten/abc123', json={'url': 'test123'})
-            response_json = response.get_json()
+    response1 = client.get(f'/shorten/{short_code}/stats')
+    response2 = client.get(f'/shorten/{short_code}/stats')
+    
+    access_count1 = response1.get_json()['accessCount']
+    access_count2 = response2.get_json()['accessCount']
 
-            valid_response = {'createdAt': 'Sat, 17 May 2025 00:00:00 GMT', 'id': 0, 'shortCode': 'abc123', 'updatedAt': 'Sat, 17 May 2025 15:45:19 GMT', 'url': 'test123'}
-            old_timestamp = valid_response.pop('updatedAt')
-            new_timestamp = response_json.pop('updatedAt')
-            
-            self.assertNotEqual(old_timestamp, new_timestamp) # Test that the updated at actually changes 
-            self.assertDictEqual(response_json, {'createdAt': 'Sat, 17 May 2025 00:00:00 GMT', 'id': 0, 'shortCode': 'abc123', 'url': 'test123'})
-            self.assertTrue(response.status_code == 200) # Check the resposne code now that the static result data has been checked
+    assert response1.status_code == 200
+    assert response2.status_code == 200
+    assert access_count1 + 1 == access_count2
 
-    def test_update_url_endpoint_no_url(self):
-        with create_app().test_client() as tc:
-            response = tc.put('/shorten/abc123', json={})
-            response_json = response.get_json()
+def test_get_api_statistics_endpoint_404(client):
+    response = client.get('/shorten/0/stats')
 
-            self.assertTrue(response_json == {'msg': 'Invalid URL or URL Not found in request data.'})
-            self.assertTrue(response.status_code == 400)
+    assert response.status_code == 404
+    assert response.get_json() == {'msg': 'URL Not Found'}
 
-    @pytest.mark.depends(on=['test_post_url_endpoint'])
-    def test_delete_url_endpoint(self):
-        with create_app().test_client() as tc:
-            response = tc.delete(f'/shorten/{testURLSAPI.deleteShortCode}')
+def test_post_url_endpoint(client):
+    response = client.post('/shorten', json={
+        'url': 'https://test.url/123'
+    })
 
-            self.assertTrue(response.status_code == 204)
+    assert response.get_json()['url'] == 'https://test.url/123'
+    assert response.status_code == 201
+
+def test_post_url_endpoint_no_url(client):
+    response = client.post('/shorten', json={})
+
+    assert response.status_code == 400
+    assert response.get_json() == {'msg': 'Invalid URL or URL Not found in request data.'}
+
+def test_update_url_endpoint(client, short_code):
+    response = client.put(f'shorten/{short_code}', json={'url': 'test123'})
+    
+    assert response.status_code == 200
+    assert response.get_json()['url'] == 'test123'
+
+def test_update_url_endpoint_no_url(client, short_code):
+    response = client.put(f'shorten/{short_code}', json={})
+    
+    assert response.status_code == 400
+    assert response.get_json() == {'msg': 'Invalid URL or URL Not found in request data.'}
+
+def test_update_url_endpoint_404(client):
+    response = client.put('/shorten/0', json={'url': ''})
+
+    assert response.status_code == 404
+    assert response.get_json() == {'msg': 'URL Not Found'}
+
+def test_delete_url_endpoint(client, short_code):
+    response = client.delete(f'/shorten/{short_code}')
+    
+    assert response.status_code == 204
+
+def test_delete_url_endpoint_404(client):
+    response = client.delete('/shorten/0')
+
+    assert response.status_code == 404
+
+# These tests need the client for the set up and teardown of the test DB
+def test_get_my_urls(client, my_urls):
+    urls = test_db_helper.get_my_urls()
+
+    assert urls[0] == my_urls.serialize()
+
+def test_get_my_urls_empty(client):
+    urls = test_db_helper.get_my_urls()
+    assert urls == None
