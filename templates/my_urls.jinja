@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block body %}
+    {% if my_urls is not none %}
     {# {{ "ID" | "URL" | "Short Code" | "Time Created" | "Last Updated" }} #}
     <table class="table table-striped">
         <thead class="thead-dark">
@@ -73,4 +74,9 @@
             </div>
         </div>
     </div>
+    {% else %}
+    <div class="alert alert-danger" role="alert">
+        No URLs found! Try create one on our <a href="/">homepage</a> and check back here!
+    </div>
+    {% endif %}
 {% endblock body %}

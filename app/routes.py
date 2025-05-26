@@ -18,6 +18,11 @@ def create_short_code(length=6):
 def root():
     return make_response(render_template('index.jinja'), 200)
 
+@main.route('/myurls', methods=['GET'])
+def get_my_urls():
+    urls = db.get_my_urls()
+    return render_template('my_urls.jinja', my_urls=urls)
+
 @main.route('/shorten',  methods=['POST'])
 def create_url():
     data = request.json
@@ -58,8 +63,3 @@ def delete_url(url:str):
     if result == 404:
         return jsonify({'msg': 'URL Not Found'}), result
     return '', result
-
-@main.route('/myurls', methods=['GET'])
-def get_my_urls():
-    urls = db.get_my_urls()
-    return render_template('my_urls.jinja', my_urls=urls)
